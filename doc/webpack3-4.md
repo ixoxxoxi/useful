@@ -322,11 +322,303 @@ plugins: [
 ```
 
 ```js
+// plugins
+const webpackConfig = merge(baseWebpackConfig, {
+  module: {...},
+  optimization: { // 增加此处代码
+    // Setting optimization.runtimeChunk to true adds an additonal chunk to each entrypoint containing only the runtime.
+    // The value single instead creates a runtime file to be shared for all generated chunks.
+    runtimeChunk: 'single',
+    minimize: env === 'production' ? true : false, //生产环境下才进行代码压缩。
+    splitChunks:{
+      //As it was mentioned before this plugin will affect dynamic imported modules. Setting the optimization.
+      //splitChunks.chunks option to "all" initial chunks will get affected by it (even the ones not imported dynamically).
+      //This way chunks can even be shared between entry points and on-demand loading.
+      //This is the recommended configuration.
+      //官方推荐使用all.
+      chunks: 'all',
+      minSize: 30000, //模块大于30k会被抽离到公共模块
+      minChunks: 1, //模块出现1次就会被抽离到公共模块
+      maxAsyncRequests: 5, //异步模块，一次最多只能被加载5个
+      maxInitialRequests: 3, //入口模块最多只能加载3个
+      name: true, // 拆分出来块的名字(Chunk Names)，默认由块名和hash值自动生成；设置为true则表示根据模块和缓存组秘钥自动生成。
+      cacheGroups: {
+        // 详情建议参看官网 http://webpack.html.cn/plugins/split-chunks-plugin.html
+        default: {
+          minChunks: 2,
+          reuseExistingChunk: true,
+        },
+        //打包重复出现的代码
+        vendor: {
+            // chunks: 'initial',
+            // 省略test默认选择所有的模块。
+            chunks: 'all',
+            minChunks: 2,
+            name: 'vendor'
+        },
+        //打包第三方类库
+        commons: {
+            // chunks: "initial",
+            chunks: "all",
+            name: "commons",
+            minChunks: Infinity
+        }
+      }
+    }
+  },
+  plugins: [...]
+})
+```
+
+```js
+// utils.js
+'use strict'
+...
+// const ExtractTextPlugin = require('extract-text-webpack-plugin') //删除或注释此段。
+// 引入
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+...
+
+// 修改此处的generateLoaders函数。
+  // generate loader string to be used with extract text plugin
+  function generateLoaders(loader, loaderOptions) {
+    const loaders = options.usePostCSS ? [cssLoader, postcssLoader] : [cssLoader]
+
+    if (loader) {
+      loaders.push({
+        loader: loader + '-loader',
+        options: Object.assign({}, loaderOptions, {
+          sourceMap: options.sourceMap
+        })
+      })
+    }
+    // Extract CSS when that option is specified
+    // (which is the case during production build)
+    if (options.extract) {
+     /**注释或删除此处代码，开始 */
+     // return ExtractTextPlugin.extract({
+     //   use: loaders,
+     //   publicPath: '../../',
+     //   fallback: 'vue-style-loader'
+     // })
+     /**注释或删除此处代码，结束 */
+     /**增加此处代码开始 */
+     return [MiniCssExtractPlugin.loader].concat(loaders)
+     /**增加此处代码结束 */
+    } else {
+      return ['vue-style-loader'].concat(loaders)
+    }
+  }
+```
+
+```js
+output： {........},
+
+optimization: {
+    runtimeChunk: { name: 'manifest' },
+    minimizer: [new UglifyJsPlugin({ cache: true, parallel: true, sourceMap:config.build.productionSourceMap, uglifyOptions: { warnings: false } }), new OptimizeCSSPlugin({ cssProcessorOptions: config.build.productionSourceMap ? { safe: true, map: { inline: false } } : { safe: true } }),], splitChunks: { chunks: 'async', minSize: 30000, minChunks: 1, maxAsyncRequests: 5, maxInitialRequests: 3, name: false, cacheGroups: { vendor: { name: 'vendor', chunks: 'initial', priority: -10, reuseExistingChunk: false, test: /node_modules\/(.*)\.js/ }, styles: { name: 'styles', test: /\.(scss|css)$/, chunks: 'all', minChunks: 1, reuseExistingChunk: true, enforce: true } } } },
+
+plugins: [..........]
+```
+
+---
+
+```js
+注释调extract - text - webpack - plugin相关代码;
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+if (options.extract) {
+	//   return ExtractTextPlugin.extract({
+	//     use: loaders,
+	//     fallback: 'vue-style-loader'
+	//   })
+	return [MiniCssExtractPlugin.loader].concat(loaders);
+} else {
+	return ["vue-style-loader"].concat(loaders);
+}
+```
+
+```js
+// const ExtractTextPlugin = require('extract-text-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+module.exports添加
+    optimization: {
+        splitChunks: {
+          cacheGroups: {
+            styles: {
+              name: 'styles',
+              test: /\.css$/,
+              chunks: 'all',
+              enforce: true
+            }
+          }
+        }
+    },
 
 ```
 
 ```js
+const MiniCssExtractPlugin  = require('mini-css-extract-plugin');
+module: {
+        rules: [
+        {
+            test: /\.css$/,
+            use: [
+                MiniCssExtractPlugin.loader,
+                'css-loader',
+                'postcss-loader',
+            ]
+        },
+        {
+            test: /\.styl(us)?$/,
+            use: [
+                MiniCssExtractPlugin.loader,
+                'css-loader',
+                'postcss-loader',
+                'stylus-loader'
+            ]
+        },
+        {
+            test: /\.less$/,
+            use: [
+                MiniCssExtractPlugin.loader,
+                'css-loader',
+                'postcss-loader',
+                'less-loader'
+            ]
+        },
+        {
+            test: /\.(scss|sass)$/,
+            use: [
+                MiniCssExtractPlugin.loader,
+                'css-loader',
+                'postcss-loader',
+                'sass-loader'
+            ]
+        },
+    ]
+    },
 
+plugins: [
+    new MiniCssExtractPlugin({
+        filename: utils.assetsPath('css/[name].[contenthash].css'),
+    }), // 新增
+
+]
+```
+
+```js
+optimization: {
+    splitChunks: {
+        chunks: 'async',
+        minSize: 20000,
+        minChunks: 1,
+        maxAsyncRequests: 30,
+        maxInitialRequests: 30,
+        cacheGroups: {
+            vendors: { // 工程基础包 例如包括vue、vue-router、axios等常用不改变的包，可以做缓存
+                test: /[\\/]node_modules[\\/]/,
+                name: 'vendor',
+                chunks: 'all',
+                priority: -10,
+                reuseExistingChunk: true,
+            },
+            app: { // 业务基础包大部分不是node_modules的模块，例如我们在common中存放的一些基础组件，其次是一些三方的组件库（这些是在node_modules中的，但是因为经常变动所以不适宜放在vendor中）
+                minChunks: 3,
+                name: 'app',
+                priority: -20,
+                reuseExistingChunk: true,
+            },
+        }
+    }
+  },
+```
+
+```js
+//webpack.prod.conf.js
+
+optimization: {
+
+    //其他配置
+
+    runtimeChunk: {
+
+      name: 'manifest'
+
+    },
+
+    splitChunks:{
+
+      chunks: 'async',
+
+      minSize: 30000,
+
+      minChunks: 1,
+
+      maxAsyncRequests: 5,
+
+      maxInitialRequests: 3,
+
+      name: false,
+
+      cacheGroups: {
+
+        vendor: {
+
+          name: 'vendor',
+
+          chunks: 'initial',
+
+          priority: -10,
+
+          reuseExistingChunk: false,
+
+          test: /node_modules\/(.*)\.js/
+
+        },
+
+        styles: {
+
+          name: 'styles',
+
+          test: /\.(scss|css)$/,
+
+          chunks: 'all',
+
+          minChunks: 1,
+
+          reuseExistingChunk: true,
+
+          enforce: true
+
+        }
+
+      }
+
+    }
+
+  },
+```
+
+```js
+optimization: {
+
+    minimizer: [
+
+      new UglifyJsPlugin({
+
+        cache: true,
+
+        parallel: true,
+
+        sourceMap: true // set to true if you want JS source maps
+
+      }),
+
+      new OptimizeCSSAssetsPlugin({})
+
+    ],
+
+}
 ```
 
 ```js
