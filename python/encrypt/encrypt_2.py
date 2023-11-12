@@ -10,7 +10,10 @@ def generate_key():
 
 # 加载密钥
 def load_key():
-    return open('key.key', 'rb').read()
+    if os.path.exists('key.key'):
+        return open('key.key', 'rb').read()
+    else:
+        return None
 
 # 加密文件
 def encrypt_file(file_path, key):
@@ -60,6 +63,10 @@ def main():
             print("加密成功！")
     elif choice == "2":
         key = load_key()
+        if key is None:
+            print("无法找到密钥文件！")
+            return
+
         if os.path.isfile(path):
             decrypt_file(path, key)
             print("解密成功！")
@@ -67,7 +74,8 @@ def main():
             decrypt_folder(path, key)
             print("解密成功！")
 
-    os.remove('key.key')  # 删除密钥文件
+    if key is not None:
+        os.remove('key.key')  # 删除密钥文件
 
 if __name__ == '__main__':
     main()
