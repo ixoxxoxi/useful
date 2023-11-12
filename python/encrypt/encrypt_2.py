@@ -4,14 +4,19 @@ from cryptography.fernet import Fernet
 
 # 生成加密密钥
 def generate_key():
+    password = input("请输入密码：")
     key = Fernet.generate_key()
+    fernet = Fernet(key)
+    encrypted_password = fernet.encrypt(password.encode())
     with open('key.key', 'wb') as key_file:
         key_file.write(key)
 
 # 加载密钥
 def load_key():
     if os.path.exists('key.key'):
-        return open('key.key', 'rb').read()
+        with open('key.key', 'rb') as key_file:
+            key = key_file.read()
+        return key
     else:
         return None
 
@@ -49,12 +54,17 @@ def decrypt_folder(folder_path, key):
 
 # 主程序
 def main():
+    if not os.path.exists('key.key'):
+        generate_key()
+
+    key = load_key()
+    if key is None:
+        return
+
     choice = input("请选择操作：1.加密  2.解密：")
     path = input("请输入文件或文件夹路径：")
 
     if choice == "1":
-        generate_key()
-        key = load_key()
         if os.path.isfile(path):
             encrypt_file(path, key)
             print("加密成功！")
@@ -62,20 +72,12 @@ def main():
             encrypt_folder(path, key)
             print("加密成功！")
     elif choice == "2":
-        key = load_key()
-        if key is None:
-            print("无法找到密钥文件！")
-            return
-
         if os.path.isfile(path):
             decrypt_file(path, key)
             print("解密成功！")
         elif os.path.isdir(path):
             decrypt_folder(path, key)
             print("解密成功！")
-
-    if key is not None:
-        os.remove('key.key')  # 删除密钥文件
 
 if __name__ == '__main__':
     main()
