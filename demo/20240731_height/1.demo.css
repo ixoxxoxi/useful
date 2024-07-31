@@ -47,6 +47,7 @@
   grid-template-columns: 50% 49%;
   grid-template-rows: 30% 70%;
   column-gap: 1%;
+  transform: scale(1);
 }
 .leftContainer {
   width: 100%;
@@ -65,7 +66,15 @@
   border: 1px solid red;
 }
 .svg {
-  width: 1000px;
-  height: 1000px;
   background-color: pink;
+}
+.menu {
+  width: 80px;
+  height: 200px;
+  border: 1px solid #39f;
+  background-color: #fff;
+  list-style: none;
+}
+.menu:focus {
+  background-color: lightblue;
 }

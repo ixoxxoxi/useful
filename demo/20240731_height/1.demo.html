@@ -17,6 +17,11 @@
         height: 0;
         flex: 1;
       }
+      .content.answer_4 {
+        height: 0;
+        /* flex: 1 1 auto; */
+        flex: auto;
+      }
     </style>
     <link rel="stylesheet" href="./1.demo.css" />
   </head>
@@ -26,7 +31,7 @@
       <div class="drawer">
         <div class="center">
           <div class="header">header</div>
-          <div class="content answer_3">
+          <div class="content answer_4">
             <div class="panel">
               <div class="left">
                 <div class="leftContainer">
@@ -132,6 +137,13 @@
                     <p>item-99</p>
                     <p>item-100</p>
                   </div>
+                  <ul class="menu" style="display: none" tabindex="-1">
+                    <li>menu-1</li>
+                    <li>menu-2</li>
+                    <li>menu-3</li>
+                    <li>menu-4</li>
+                    <li>menu-5</li>
+                  </ul>
                 </div>
               </div>
               <div class="rightTop"></div>
@@ -142,6 +154,34 @@
       </div>
     </div>
 
-    <script></script>
+    <script>
+      const svg = document.querySelector('.svg');
+      const p = document.querySelectorAll('.svg > p');
+      const menu = document.querySelector('.menu');
+
+      svg.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        console.log('svg.event-->', event);
+        const { clientX, clientY, pageX, pageY, offsetX, offsetY, screenX, screenY, x, y } = event;
+        menu.style.position = 'fixed';
+        // menu.style.left = `${x}px`;
+        // menu.style.top = `${y}px`;
+        menu.style.left = `${pageX - event.target.offsetParent.offsetLeft}px`;
+        menu.style.top = `${pageY - event.target.offsetParent.offsetTop}px`;
+        menu.style.display = 'block';
+        menu.focus();
+      });
+      p.forEach(item => {
+        item.addEventListener('contextmenu', event => {
+          event.preventDefault();
+          // console.log('p.event-->', event);
+        });
+      });
+      menu.addEventListener('blur', event => {
+        // console.log('blur-->', event);
+        event.target.style.display = 'none';
+        event.target.style.outline = 'unset';
+      });
+    </script>
   </body>
 </html>
